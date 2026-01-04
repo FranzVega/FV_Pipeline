@@ -6,8 +6,16 @@ Configuracion central del pipeline
 
 # Version del pipeline (IMPORTANTE para updates desde GitHub)
 VERSION = "1.0.0"
-REPO_URL = "https://github.com/FranzVega/FV_Pipeline"
-REPO_API = "https://api.github.com/repos/FranzVega/FV_Pipeline/contents/pkl_pipeline"
+
+# GitHub Repository
+REPO_OWNER = "FranzVega"
+REPO_NAME = "FV_Pipeline"
+REPO_BRANCH = "main"  # o "master" dependiendo de tu rama principal
+
+# URLs
+REPO_URL = "https://github.com/{}/{}".format(REPO_OWNER, REPO_NAME)
+REPO_API = "https://api.github.com/repos/{}/{}/contents/pkl_pipeline".format(REPO_OWNER, REPO_NAME)
+REPO_RAW = "https://raw.githubusercontent.com/{}/{}/{}/pkl_pipeline".format(REPO_OWNER, REPO_NAME, REPO_BRANCH)
 
 # Configuraciones generales
 PIPELINE_NAME = "PKL Pipeline"
@@ -27,7 +35,11 @@ def get_version():
 def get_repo_info():
     """Retorna info del repositorio"""
     return {
+        'owner': REPO_OWNER,
+        'name': REPO_NAME,
+        'branch': REPO_BRANCH,
         'url': REPO_URL,
         'api': REPO_API,
+        'raw': REPO_RAW,
         'version': VERSION
     }
