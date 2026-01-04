@@ -252,7 +252,7 @@ class PKLPipelineUI(object):
         # Confirmar con el usuario
         response = cmds.confirmDialog(
             title='Auto Update',
-            message='This will REPLACE all your files'                    
+            message='This will REPLACE all your files.\n\n'                    
                     'You will need to restart the tool after updating.\n\n'
                     'Continue?',
             button=['Yes, Update', 'Cancel'],
@@ -500,3 +500,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
