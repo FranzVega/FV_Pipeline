@@ -10,12 +10,12 @@ VERSION = "1.0.0"
 # GitHub Repository
 REPO_OWNER = "FranzVega"
 REPO_NAME = "FV_Pipeline"
-REPO_BRANCH = "main"  # o "master" dependiendo de tu rama principal
+REPO_BRANCH = "main"
 
-# URLs
+# URLs - SIN pkl_pipeline/ porque todo esta en la raiz del repo
 REPO_URL = "https://github.com/{}/{}".format(REPO_OWNER, REPO_NAME)
-REPO_API = "https://api.github.com/repos/{}/{}/contents/pkl_pipeline".format(REPO_OWNER, REPO_NAME)
-REPO_RAW = "https://raw.githubusercontent.com/{}/{}/{}/pkl_pipeline".format(REPO_OWNER, REPO_NAME, REPO_BRANCH)
+REPO_API = "https://api.github.com/repos/{}/{}".format(REPO_OWNER, REPO_NAME)
+REPO_RAW = "https://raw.githubusercontent.com/{}/{}/{}".format(REPO_OWNER, REPO_NAME, REPO_BRANCH)
 
 # Configuraciones generales
 PIPELINE_NAME = "PKL Pipeline"
