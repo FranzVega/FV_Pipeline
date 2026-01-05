@@ -100,31 +100,44 @@ except ImportError as e:
 ##-- FUNCIONES DE PROCESO (Conectadas con Core)
 def CheckScene(*args): 
     """Llama al script 1 del core"""
-    check_scene()
+    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
+    #check_scene()
     
 def create_main_group(*args): 
+    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
     print("Group Created")
     
 def check_anim_scene(*args): 
+    
+    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
     print("Scene ready")
     
 def set_camera(*args): 
+    
+    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
     print("Camera Set")
     
 def orgAnim(*args): 
     """Llama al script 2 del core"""
-    organize_animation()
+    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
+   # organize_animation()
     
 def Check_errors(*args): 
-    print("Errores")
     
-def export_all(*args): 
-    print("Export all")
+    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
+    #print("Errores")
+    
+def export_all(*args):
+    
+    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK') 
+   # print("Export all")
     
 def export_selected(*args): 
+    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
     print("Selected groups exported")
     
 def export_camera(*args): 
+    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
     print("Camera exported")
 
 
@@ -162,6 +175,7 @@ class PKLPipelineUI(object):
     def check_for_updates(self, *args):
         """
         Verifica si hay actualizaciones disponibles en GitHub
+        Si hay update, ofrece instalarlo directamente
         """
         try:
             # Importar update checker con manejo robusto de paths
@@ -182,50 +196,43 @@ class PKLPipelineUI(object):
                 parent_dir = os.path.dirname(ui_path.rstrip('/\\'))
                 utils_dir = os.path.join(parent_dir, 'utils')
                 
-                print("Checking for update_checker in: {}".format(utils_dir))
-                
-                # Verificar que existe
-                update_checker_file = os.path.join(utils_dir, 'update_checker.py')
-                if not os.path.exists(update_checker_file):
-                    raise Exception("update_checker.py not found at: {}".format(update_checker_file))
-                
-                # Agregar al path
                 if utils_dir not in sys.path:
                     sys.path.insert(0, utils_dir)
-                    print("Added to sys.path: {}".format(utils_dir))
                 
                 # Intentar importar
                 import update_checker
-                print("update_checker imported successfully!")
                 
                 result = update_checker.check_updates()
                 
-                # Mostrar resultado en dialogo
+                # Si hay update disponible, ofrecer instalarlo
                 if result.get('available'):
                     message = "Update Available!\n\n"
-                    message += "Current: {}\n".format(result.get('current_version'))
-                    message += "Latest:  {}\n\n".format(result.get('latest_version'))
-                    message += "Check the Script Editor for update instructions."
+                    message += "Current Version: {}\n".format(result.get('current_version'))
+                    message += "Latest Version:  {}\n\n".format(result.get('latest_version'))
+                    message += "Would you like to update now?\n\n"
+                    message += "(You will have to restart Maya)"
                     
                     response = cmds.confirmDialog(
                         title='Update Available',
                         message=message,
-                        button=['Show Instructions', 'Close'],
-                        defaultButton='Show Instructions',
-                        cancelButton='Close',
+                        button=['Update Now', 'Cancel'],
+                        defaultButton='Update Now',
+                        cancelButton='Cancel',
                         icon='information'
                     )
                     
-                    if response == 'Show Instructions':
-                        update_checker.show_update_instructions()
+                    # Si el usuario quiere actualizar, llamar a auto_update
+                    if response == 'Update Now':
+                        self.auto_update_pipeline()
                     
                 else:
+                    # No hay updates
                     message = result.get('message', 'You are up to date!')
                     if 'error' in result:
-                        message += "\n\nError: {}".format(result['error'])
+                        message += "\n\nNote: {}".format(result['error'])
                     
                     cmds.confirmDialog(
-                        title='No Updates',
+                        title='No Updates Available',
                         message=message,
                         button=['OK'],
                         defaultButton='OK'
@@ -248,22 +255,8 @@ class PKLPipelineUI(object):
     def auto_update_pipeline(self, *args):
         """
         Ejecuta auto-update desde GitHub (reemplaza archivos SIN backup)
+        Puede ser llamado directamente o desde check_for_updates
         """
-        # Confirmar con el usuario
-        response = cmds.confirmDialog(
-            title='Auto Update',
-            message='This will REPLACE all your files.\n\n'                    
-                    'You will need to restart the tool after updating.\n\n'
-                    'Continue?',
-            button=['Yes, Update', 'Cancel'],
-            defaultButton='Cancel',
-            cancelButton='Cancel',
-            icon='warning'
-        )
-        
-        if response != 'Yes, Update':
-            return
-        
         try:
             # Importar auto_updater
             import sys
@@ -301,7 +294,8 @@ class PKLPipelineUI(object):
                 if result['success']:
                     message = "Update completed successfully!\n\n"
                     message += "Updated {} files.\n\n".format(len(result['updated']))
-                    message += "Please CLOSE and REOPEN the tool to use the new version."
+                    message += "The tool will now close.\n"
+                    message += "Please REOPEN it from the shelf to use the new version."
                     
                     cmds.confirmDialog(
                         title='Update Complete',
@@ -367,7 +361,7 @@ class PKLPipelineUI(object):
         cmds.button(label="Check Scene", command=CheckScene, 
                    annotation="Ejecuta el Script 1: Scene Checker")
         cmds.button(label="Create main group", command=create_main_group)
-        cmds.checkBox(label="AdvancedSkeleton Logic")
+        # cmds.checkBox(label="AdvancedSkeleton Logic")
         cmds.setParent("..")
         cmds.setParent("..")
 
@@ -397,8 +391,10 @@ class PKLPipelineUI(object):
             parent=main_col
         )
         cmds.columnLayout(adjustableColumn=True)
-        cmds.button(label="Check for Errors", command=Check_errors)
+        # cmds.button(label="Check for Errors", command=Check_errors)
         cmds.button(label="Export all", command=export_all)
+        cmds.button(label="Export Selected Groups", command=export_all)
+        cmds.button(label="Export Camera", command=export_all)
         cmds.setParent("..")
         cmds.setParent("..")
 
@@ -445,19 +441,15 @@ class PKLPipelineUI(object):
             backgroundColor=[0.2, 0.3, 0.2]
         )
         cmds.setParent("..")
-        
-        cmds.separator(height=5, style="none")
-        
-        # Boton de auto-update (mas prominente)
-        cmds.button(
-            label="AUTO UPDATE FROM GITHUB", 
-            command=self.auto_update_pipeline,
-            backgroundColor=[0.3, 0.5, 0.3],
-            annotation="Downloads and replaces all files from GitHub (NO backup)"
-        )
               
         cmds.setParent("..") 
-        cmds.setParent("..") 
+        cmds.setParent("..")
+
+        cmds.text(label= 'Created by Franz Vega', 
+            font="smallObliqueLabelFont",
+            align="right",
+            )
+
 
         cmds.showWindow(self.window)
 
@@ -498,6 +490,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
-
