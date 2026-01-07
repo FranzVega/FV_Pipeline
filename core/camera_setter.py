@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 """
 PKL Pipeline - Camera Setter
 Configura atributos para camaras en escenas de animacion
@@ -8,7 +8,7 @@ import re
 import os
 import sys
 
-# Importar helpers
+
 try:
     current_file = os.path.abspath(__file__)
     core_dir = os.path.dirname(current_file)
@@ -24,7 +24,7 @@ try:
 except ImportError as e:
     print("Warning: Could not import helpers - {}".format(e))
     
-    # Fallback
+    
     def ensure_attribute_exists(obj, attr_name, attr_type='string', default_value='', lock=False):
         attr_full_name = obj + '.' + attr_name
         if not cmds.attributeQuery(attr_name, node=obj, exists=True):
@@ -39,7 +39,7 @@ except ImportError as e:
 
 def check_camtools_pattern(camera_name):
     """
-    Verifica si la camara cumple con el patron CamTools: _FR_##_##
+    Verifica si la camara cumple con el patron CamTools: _FR_
     Ejemplos validos: camera_FR_001_100, shot_FR_50_150_v01
     
     Returns:
@@ -77,9 +77,9 @@ def set_camera_attributes():
     print("PKL PIPELINE - CAMERA SETTER")
     print("=" * 60)
     
-    # ===============================
-    # 1. Validar seleccion
-    # ===============================
+    
+    
+    
     
     selection = cmds.ls(selection=True, type="transform")
     
@@ -95,7 +95,7 @@ def set_camera_attributes():
     
     camera = selection[0]
     
-    # Verificar que es una camara
+    
     shapes = cmds.listRelatives(camera, shapes=True, fullPath=True) or []
     if not shapes or cmds.objectType(shapes[0]) != 'camera':
         cmds.warning("Selected object is not a camera")
@@ -109,9 +109,9 @@ def set_camera_attributes():
     
     print("\nCamera: {}".format(camera))
     
-    # ===============================
-    # 2. Detectar valores condicionales
-    # ===============================
+    
+    
+    
     
     camtools_logic = check_camtools_pattern(camera)
     is_in_group = check_is_in_group(camera)
@@ -119,31 +119,31 @@ def set_camera_attributes():
     print("  CamTools Pattern: {}".format(camtools_logic))
     print("  Is in Group: {}".format(is_in_group))
     
-    # ===============================
-    # 3. Crear/actualizar atributos
-    # ===============================
+    
+    
+    
     
     print("\nSetting attributes...")
     
-    # Hierarchy (string, locked)
+    
     ensure_attribute_exists(camera, 'Hierarchy', 'string', 'CAMERA', lock=True)
     print("  [OK] Hierarchy = 'CAMERA' (locked)")
     
-    # Unreal Camera (bool, unlocked)
+    
     ensure_attribute_exists(camera, 'UnrealCamera', 'bool', True, lock=False)
     print("  [OK] Unreal Camera = True")
     
-    # CamTools Logic (bool, unlocked, auto-detectado)
+    
     ensure_attribute_exists(camera, 'CamToolsLogic', 'bool', camtools_logic, lock=False)
     print("  [OK] CamTools Logic = {}".format(camtools_logic))
     
-    # Is in Group (bool, unlocked, auto-detectado)
+    
     ensure_attribute_exists(camera, 'IsInGroup', 'bool', is_in_group, lock=False)
     print("  [OK] Is in Group = {}".format(is_in_group))
     
-    # ===============================
-    # 4. Seleccionar camara final
-    # ===============================
+    
+    
+    
     
     cmds.select(camera, replace=True)
     
@@ -151,7 +151,7 @@ def set_camera_attributes():
     print("CAMERA SET SUCCESSFULLY")
     print("=" * 60 + "\n")
     
-    # Mensaje de confirmacion
+    
     cmds.confirmDialog(
         title='Success',
         message='The following camera will be treated as the main camera for render: \n\nCamera: {}'.format(camera),
@@ -159,4 +159,5 @@ def set_camera_attributes():
         icon='information'
     )
     
+
     return True
