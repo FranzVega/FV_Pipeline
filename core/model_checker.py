@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 import maya.cmds as cmds
 import maya.mel as mel
 from collections import defaultdict
@@ -30,8 +30,8 @@ def model_check_cleanup():
         cmds.warning("No polygon geometry found in the scene.")
         return
 
-    # --- 1. CHECKS DE GEOMETRIA (COMPONENTES) ---
-    # Se ha eliminado 'Concave faces' de esta lista
+    
+    
     checks = [
         ("Ngons (more than 4 sides)", 2),
         ("Faces with holes", 4),
@@ -43,7 +43,7 @@ def model_check_cleanup():
 
     for label, index in checks:
         flags = ["0"] * 31 
-        flags[0] = "1" # Modo Select Only
+        flags[0] = "1" 
         flags[index] = "1"
 
         cmds.select(geos, r=True)
@@ -56,9 +56,9 @@ def model_check_cleanup():
                 error_map[geo][label] += 1
                 all_problem_components.append(f)
 
-    # --- 2. CHECK DE FREEZE TRANSFORMATIONS ---
+    
     for geo in geos:
-        # Revisa traslacion, rotacion y escala con una pequena tolerancia
+        
         t = cmds.getAttr(geo + ".t")[0]
         r = cmds.getAttr(geo + ".r")[0]
         s = cmds.getAttr(geo + ".s")[0]
@@ -72,7 +72,7 @@ def model_check_cleanup():
             error_map[geo]["Unfrozen Transformations"] = 1
             objects_to_freeze.append(geo)
 
-    # --- 3. SELECCION Y REPORTE FINAL ---
+    
     final_selection = all_problem_components + objects_to_freeze
     
     if final_selection:
@@ -103,5 +103,5 @@ def model_check_cleanup():
             icon="information"
         )
 
-# Para ejecutar:
-# model_check_cleanup()
+
+
