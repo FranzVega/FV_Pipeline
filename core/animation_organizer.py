@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 """
 PKL Pipeline - Animation Organizer
 Script completo para organizar escenas de animacion
@@ -7,9 +7,9 @@ import maya.cmds as cmds
 import sys
 import os
 
-
+# Importar helpers
 try:
-    
+    # Asegurar que utils esta en el path
     current_file = os.path.abspath(__file__)
     core_dir = os.path.dirname(current_file)
     parent_dir = os.path.dirname(core_dir)
@@ -20,7 +20,7 @@ try:
     
     import helpers
     
-    
+    # Importar funciones especificas
     get_sq_from_scene = helpers.get_sq_from_scene
     get_sh_from_scene = helpers.get_sh_from_scene
     get_export_path = helpers.get_export_path
@@ -29,7 +29,7 @@ try:
     
 except ImportError as e:
     print("Warning: Could not import helpers - {}".format(e))
-    
+    # Fallback: definir funciones basicas
     import re
     
     def get_sq_from_scene():
@@ -56,7 +56,7 @@ except ImportError as e:
             cmds.setAttr(attr_full_name, lock=True)
 
 
-
+# ====== FUNCIONES ESPECIFICAS DE ORGANIZACION ======
 
 def find_objects_with_hierarchy_attribute(hierarchy_value):
     """Busca objetos con atributo Hierarchy = valor especifico"""
@@ -87,7 +87,7 @@ def organize_hierarchy_recursive(parent_name):
     
     for obj in objects_to_parent:
         if obj != parent_name:
-            
+            # Condicion especial para camaras: verificar IsInGroup
             if parent_name == 'CAMERA':
                 if cmds.attributeQuery('IsInGroup', node=obj, exists=True):
                     is_in_group = cmds.getAttr(obj + '.IsInGroup')
@@ -124,11 +124,11 @@ def setup_camera_group(scene_data):
     if not cmds.objExists('CAMERA'):
         return False
     
-    
+    # Obtener frame range del timeline
     start = cmds.playbackOptions(query=True, minTime=True)
     end = cmds.playbackOptions(query=True, maxTime=True)
     
-    
+    # Construir ExportedName: CAM_PKL_S1_SH010_001_100
     exported_name = "CAM_{}_{}_{}_{}" .format(
         scene_data['sq'], 
         scene_data['sh'],
@@ -136,14 +136,14 @@ def setup_camera_group(scene_data):
         int(end)
     )
     
-    
-    
+    # Construir Path: <workspace_root>/Unreal/animation/PKL_S1/SH010/Camera
+    # Extraer el base path sin el ultimo segmento
     base_export_path = scene_data['export_path']
     path_value = '{}/Camera'.format(base_export_path)
     
+    # FORZAR actualizacion de atributos (unlock -> set -> lock)
     
-    
-    
+    # ExportedName
     if cmds.attributeQuery('ExportedName', node='CAMERA', exists=True):
         cmds.setAttr('CAMERA.ExportedName', lock=False)
         cmds.setAttr('CAMERA.ExportedName', exported_name, type='string')
@@ -153,7 +153,7 @@ def setup_camera_group(scene_data):
         cmds.setAttr('CAMERA.ExportedName', exported_name, type='string')
         cmds.setAttr('CAMERA.ExportedName', lock=True)
     
-    
+    # Path
     if cmds.attributeQuery('Path', node='CAMERA', exists=True):
         cmds.setAttr('CAMERA.Path', lock=False)
         cmds.setAttr('CAMERA.Path', path_value, type='string')
@@ -163,7 +163,7 @@ def setup_camera_group(scene_data):
         cmds.setAttr('CAMERA.Path', path_value, type='string')
         cmds.setAttr('CAMERA.Path', lock=True)
     
-    
+    # Exportable
     if cmds.attributeQuery('Exportable', node='CAMERA', exists=True):
         cmds.setAttr('CAMERA.Exportable', lock=False)
         cmds.setAttr('CAMERA.Exportable', True)
@@ -183,7 +183,7 @@ def update_dynamic_groups():
     all_transforms = cmds.ls(type='transform')
     
     for obj in all_transforms:
-        
+        # Saltar el grupo CAMERA - tiene su propia logica
         if obj == 'CAMERA':
             continue
             
@@ -218,7 +218,7 @@ def process_template_groups():
             hierarchy_pattern = cmds.getAttr(obj + '.Hierarchy')
             name_value = cmds.getAttr(obj + '.Name')
             
-            if '{Name}_
+            if '{Name}_#' in hierarchy_pattern:
                 current_parent = cmds.listRelatives(obj, parent=True)
                 
                 skip = False
@@ -257,7 +257,7 @@ def process_template_groups():
     return processed
 
 
-
+# ====== FUNCION PRINCIPAL ======
 
 def organize_animation():
     """
@@ -268,7 +268,7 @@ def organize_animation():
     print("PKL PIPELINE - ANIMATION ORGANIZER")
     print("=" * 60)
     
-    
+    # Obtener datos de la escena (usando helpers)
     scene_data = get_scene_data()
     
     print("\nDatos de la escena:")
@@ -276,7 +276,7 @@ def organize_animation():
     print("  SH: {}".format(scene_data['sh']))
     print("  Export Path: {}".format(scene_data['export_path']))
     
-    
+    # Crear o actualizar grupo ANIMATION
     print("\n1. Configurando grupo ANIMATION...")
     if cmds.objExists('ANIMATION'):
         print("  Grupo ANIMATION ya existe, actualizando...")
@@ -289,28 +289,28 @@ def organize_animation():
     ensure_attribute_exists(animation_group, 'SQ', 'string', scene_data['sq'], lock=True)
     ensure_attribute_exists(animation_group, 'SH', 'string', scene_data['sh'], lock=True)
     
-    
+    # Crear grupos hijos
     print("\n2. Creando grupos hijos...")
     create_child_group(animation_group, 'CH', 'CH')
     create_child_group(animation_group, 'PR', 'PR')
     create_child_group(animation_group, 'CAMERA', 'CAMERA')
     print("  Grupos CH, PR y CAMERA verificados")
     
-    
+    # Configurar grupo CAMERA con sus atributos especiales
     print("\n3. Configurando atributos de CAMERA...")
     setup_camera_group(scene_data)
     
-    
+    # Actualizar grupos dinamicos
     print("\n4. Actualizando grupos dinamicos...")
     update_dynamic_groups()
     
-    
+    # Procesar templates
     print("\n5. Procesando grupos template...")
     templates = process_template_groups()
     if templates:
         print("  {} grupos dinamicos creados".format(len(templates)))
     
-    
+    # Organizar jerarquia
     print("\n6. Organizando jerarquia...")
     organize_hierarchy_recursive('ANIMATION')
     organize_hierarchy_recursive('CH')
@@ -321,5 +321,4 @@ def organize_animation():
     print("ORGANIZACION COMPLETADA CON EXITO")
     print("=" * 60 + "\n")
     
-
     return True

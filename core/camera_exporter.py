@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 """
 PKL Pipeline - Camera Exporter
 Exporta camaras para Unreal Engine
@@ -16,22 +16,22 @@ def find_unreal_camera():
     Returns:
         str: Nombre de la camara encontrada, o None si no existe
     """
-    
+    # Verificar que existe el grupo CAMERA
     if not cmds.objExists('CAMERA'):
         cmds.warning("CAMERA group not found in scene")
         return None
     
-    
+    # Obtener todos los hijos del grupo CAMERA
     children = cmds.listRelatives('CAMERA', allDescendents=True, type='transform') or []
     
-    
+    # Buscar camaras con UnrealCamera = True
     for obj in children:
-        
+        # Verificar que es una camara
         shapes = cmds.listRelatives(obj, shapes=True, fullPath=True) or []
         if not shapes or cmds.objectType(shapes[0]) != 'camera':
             continue
         
-        
+        # Verificar atributo UnrealCamera
         if cmds.attributeQuery('UnrealCamera', node=obj, exists=True):
             if cmds.getAttr(obj + '.UnrealCamera'):
                 return obj
@@ -50,7 +50,7 @@ def get_camera_export_info():
     if not cmds.objExists('CAMERA'):
         return None
     
-    
+    # Leer atributos
     exported_name = None
     path = None
     exportable = True
@@ -64,7 +64,7 @@ def get_camera_export_info():
     if cmds.attributeQuery('Exportable', node='CAMERA', exists=True):
         exportable = cmds.getAttr('CAMERA.Exportable')
     
-    
+    # Validar que tenemos la info necesaria
     if not exported_name or not path:
         return None
     
@@ -88,9 +88,9 @@ def export_ue_camera():
     print("PKL PIPELINE - CAMERA EXPORTER")
     print("=" * 60)
     
-    
-    
-    
+    # ===============================
+    # 1. Buscar camara automaticamente
+    # ===============================
     
     print("\nSearching for Unreal Camera...")
     camera = find_unreal_camera()
@@ -107,9 +107,9 @@ def export_ue_camera():
     
     print("  Camera found: {}".format(camera))
     
-    
-    
-    
+    # ===============================
+    # 2. Leer atributos del grupo CAMERA
+    # ===============================
     
     print("\nReading CAMERA group attributes...")
     export_info = get_camera_export_info()
@@ -140,11 +140,11 @@ def export_ue_camera():
     print("  Exported Name: {}".format(exported_name))
     print("  Export Path: {}".format(export_path))
     
+    # ===============================
+    # 3. Validar rango de frames (desde atributos de camara si existen)
+    # ===============================
     
-    
-    
-    
-    
+    # Buscar si la camara tiene patron _FR_##_## (CamTools Logic)
     range_match = re.search(r'_FR_(\d+)_(\d+)', camera)
     
     if range_match:
@@ -152,18 +152,18 @@ def export_ue_camera():
         end_frame = int(range_match.group(2))
         print("  Frame range from camera name: {} - {}".format(start_frame, end_frame))
     else:
-        
+        # Usar timeline actual
         start_frame = int(cmds.playbackOptions(query=True, minTime=True))
         end_frame = int(cmds.playbackOptions(query=True, maxTime=True))
         print("  Frame range from timeline: {} - {}".format(start_frame, end_frame))
     
-    
+    # Configurar timeline
     cmds.playbackOptions(min=start_frame, max=end_frame)
     cmds.playbackOptions(animationStartTime=start_frame, animationEndTime=end_frame)
     
-    
-    
-    
+    # ===============================
+    # 4. Crear camara UE_
+    # ===============================
     
     print("\nCreating UE camera...")
     
@@ -173,7 +173,7 @@ def export_ue_camera():
     new_cam_transform = new_cam[0]
     new_cam_shape = new_cam[1]
     
-    
+    # Usar ExportedName para nombrar la camara UE
     new_cam_transform = cmds.rename(new_cam_transform, exported_name)
     new_cam_shape = cmds.listRelatives(new_cam_transform, shapes=True)[0]
     
@@ -181,9 +181,9 @@ def export_ue_camera():
     
     print("  UE camera created: {}".format(new_cam_transform))
     
-    
-    
-    
+    # ===============================
+    # 5. Copiar focal length
+    # ===============================
     
     print("  Copying focal length...")
     
@@ -200,9 +200,9 @@ def export_ue_camera():
             value = cmds.getAttr(src_attr)
             cmds.setAttr(dst_attr, value)
     
-    
-    
-    
+    # ===============================
+    # 6. Constraint + bake
+    # ===============================
     
     print("  Baking animation...")
     
@@ -218,19 +218,19 @@ def export_ue_camera():
     
     cmds.delete(constraint)
     
-    
-    
-    
+    # ===============================
+    # 7. Resolver ruta de export
+    # ===============================
     
     print("\nResolving export path...")
     
-    
+    # Obtener workspace root
     workspace_root = cmds.workspace(q=True, rootDirectory=True)
     
-    
+    # Reemplazar <workspace_root> en el path
     full_export_path = export_path.replace('<workspace_root>', workspace_root)
     
-    
+    # Crear directorios si no existen
     try:
         if not os.path.exists(full_export_path):
             os.makedirs(full_export_path)
@@ -238,14 +238,14 @@ def export_ue_camera():
     except Exception as e:
         cmds.warning("Could not create export directory: {}".format(e))
     
-    
+    # Construir path completo del FBX
     fbx_path = os.path.join(full_export_path, "{}.fbx".format(exported_name)).replace("\\", "/")
     
     print("  Export path: {}".format(fbx_path))
     
-    
-    
-    
+    # ===============================
+    # 8. Configuracion FBX
+    # ===============================
     
     print("\nConfiguring FBX export...")
     
@@ -261,18 +261,18 @@ def export_ue_camera():
     mel.eval("FBXExportBakeResampleAnimation -v true;")
     mel.eval('FBXExportQuaternion -v "resample";')
     
-    
-    
-    
+    # ===============================
+    # 9. Export FBX
+    # ===============================
     
     print("  Exporting FBX...")
     
     cmds.select(new_cam_transform, r=True)
     mel.eval('FBXExport -f "{}" -s;'.format(fbx_path))
     
-    
-    
-    
+    # ===============================
+    # 10. Limpieza si export ok
+    # ===============================
     
     if os.path.exists(fbx_path):
         cmds.delete(new_cam_transform)
@@ -299,5 +299,4 @@ def export_ue_camera():
             button=['OK'],
             icon='warning'
         )
-
         return False
