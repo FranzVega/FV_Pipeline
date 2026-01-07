@@ -67,11 +67,40 @@ setup_paths()
 try:
     import scene_checker
     import animation_organizer
+    import group_creator
     import settings
+    import camera_exporter
+    import camera_setter
+    import model_checker
+    
+    # Importar helpers para scene type
+    import sys
+    import os
+    ui_path_for_helpers = None
+    for path in sys.path:
+        normalized = path.replace('\\', '/').rstrip('/')
+        if normalized.endswith('/ui') or normalized.endswith('ui'):
+            test_file = os.path.join(path, 'pipeline_ui.py')
+            if os.path.exists(test_file):
+                ui_path_for_helpers = path
+                break
+    
+    if ui_path_for_helpers:
+        parent_dir_helpers = os.path.dirname(ui_path_for_helpers.rstrip('/\\'))
+        utils_dir_helpers = os.path.join(parent_dir_helpers, 'utils')
+        if utils_dir_helpers not in sys.path:
+            sys.path.insert(0, utils_dir_helpers)
+    
+    import helpers
+    get_scene_type = helpers.get_scene_type
     
     # Importar funciones con fallback
     check_scene = getattr(scene_checker, 'check_scene', None)
     organize_animation = getattr(animation_organizer, 'organize_animation', None)
+    create_main_group_func = getattr(group_creator, 'create_main_group', None)
+    ue_cam_exporter = getattr(camera_exporter, "export_ue_camera", None)
+    set_camera_func = getattr(camera_setter, 'set_camera_attributes', None)
+    check_model_func = getattr(model_checker, 'model_check_cleanup', None)
     
     # Si no existen las funciones, crear fallbacks
     if check_scene is None:
@@ -82,6 +111,17 @@ try:
         print("  Warning: organize_animation function not found in animation_organizer module")
         def organize_animation(): print("Animation Organized (No function found)")
     
+    if create_main_group_func is None:
+        print("  Warning: create_main_group function not found in group_creator module")
+        def create_main_group_func(): print("Create Main Group (No function found)")
+
+    if set_camera_func is None:
+        print("  Warning: set_camera_attributes function not found in camera_setter module")
+        def set_camera_func(): print("Set Camera (No function found)")
+    
+    if check_model_func is None:
+        print("  Warning: function not found in camera_setter module")
+        def check_model_func(): print("(No function found)")
     VERSION = settings.VERSION
     
     print("PKL Pipeline: Core modules loaded successfully! v{}".format(VERSION))
@@ -94,51 +134,45 @@ except ImportError as e:
     # Fallback a funciones dummy
     def check_scene(): print("Scene Checked (Fallback)")
     def organize_animation(): print("Animation Organized (Fallback)")
+    def create_main_group_func(): print("Create Main Group (Fallback)")
+    def get_scene_type(): return ("UNIDENTIFIED", [1.0, 0.4, 0.4])
     VERSION = "1.0.0"
 
 
 ##-- FUNCIONES DE PROCESO (Conectadas con Core)
 def CheckScene(*args): 
     """Llama al script 1 del core"""
-    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
-    #check_scene()
+    check_model_func()
     
 def create_main_group(*args): 
-    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
-    print("Group Created")
+    create_main_group_func()
     
 def check_anim_scene(*args): 
-    
-    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
     print("Scene ready")
     
 def set_camera(*args): 
-    
-    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
-    print("Camera Set")
+    #print("Camera Set")
+    #camera_setter.set_camera_attributes()
+    set_camera_func()
+
     
 def orgAnim(*args): 
     """Llama al script 2 del core"""
-    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
-   # organize_animation()
+    organize_animation()
+    
     
 def Check_errors(*args): 
+    print("Errores")
     
-    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
-    #print("Errores")
-    
-def export_all(*args):
-    
-    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK') 
-   # print("Export all")
+def export_all(*args): 
+    print("Export all")
     
 def export_selected(*args): 
-    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
     print("Selected groups exported")
     
-def export_camera(*args): 
-    result = cmds.confirmDialog(title='Under Development', message='This is awkward right?\n\n This option is under development. \n\n I will let you know for an update', button=['OK'], dismissString='OK')
-    print("Camera exported")
+def export_camera(*args):
+    ue_cam_exporter()
+    #print("Camera exported")
 
 
 ##-- UI CLASS
@@ -152,14 +186,10 @@ class PKLPipelineUI(object):
     def update_scene_info(self, *args):
         """
         Consulta los datos de la escena y actualiza las etiquetas de la UI.
+        Ahora usa el helper get_scene_type() para deteccion inteligente
         """
-        # 1. Logica de Scene Type
-        if cmds.objExists("ANIMATION"):
-            scene_type = "Animation Scene"
-            type_color = [0.4, 1.0, 0.4]
-        else:
-            scene_type = "UNIDENTIFIED"
-            type_color = [1.0, 0.4, 0.4]
+        # 1. Obtener tipo de escena desde helper
+        scene_type, type_color = get_scene_type()
 
         # 2. Logica de Frame Range
         start = cmds.playbackOptions(query=True, minTime=True)
@@ -210,7 +240,7 @@ class PKLPipelineUI(object):
                     message += "Current Version: {}\n".format(result.get('current_version'))
                     message += "Latest Version:  {}\n\n".format(result.get('latest_version'))
                     message += "Would you like to update now?\n\n"
-                    message += "(You will have to restart Maya)"
+                    message += "(This will download and replace all files)"
                     
                     response = cmds.confirmDialog(
                         title='Update Available',
@@ -342,17 +372,24 @@ class PKLPipelineUI(object):
         self.window = cmds.window(
             self.window_id,
             title=self.window_title,
-            widthHeight=(300, 600),
+            widthHeight=(300, 500),
             sizeable=True
         )
 
         main_scroll = cmds.scrollLayout(childResizable=True)
         main_col = cmds.columnLayout(adjustableColumn=True, parent=main_scroll)
 
+        ## AQUI EMPIEZA LA UI
+        cmds.separator(height=20, style="out")
+           
+        
+        cmds.separator(height=20, style="in")
+
         # --- Section 1: Character & Prop ---
         cmds.frameLayout(
             label="Organize Character and Prop", 
-            collapsable=True, 
+            collapsable=True,
+            collapse=True,  
             marginWidth=5, 
             marginHeight=5, 
             parent=main_col
@@ -361,14 +398,15 @@ class PKLPipelineUI(object):
         cmds.button(label="Check Scene", command=CheckScene, 
                    annotation="Ejecuta el Script 1: Scene Checker")
         cmds.button(label="Create main group", command=create_main_group)
-        # cmds.checkBox(label="AdvancedSkeleton Logic")
+        #cmds.checkBox(label="AdvancedSkeleton Logic")
         cmds.setParent("..")
         cmds.setParent("..")
 
         # --- Section 2: Animation Organization ---
         cmds.frameLayout(
             label="Animation Scene Organization", 
-            collapsable=True, 
+            collapsable=True,
+            collapse=True, 
             marginWidth=5, 
             marginHeight=5, 
             parent=main_col
@@ -376,8 +414,8 @@ class PKLPipelineUI(object):
         cmds.columnLayout(adjustableColumn=True)
         cmds.button(label="Check Animation Scene", command=check_anim_scene)
         cmds.button(label="Set Selected Camera", command=set_camera)
-        cmds.button(label="Organize Scene", command=orgAnim,
-                   annotation="Ejecuta el Script 2: Animation Organizer")
+        cmds.button(label="Organize Scene", command=orgAnim)
+                   
         cmds.setParent("..")
         cmds.setParent("..")
 
@@ -391,10 +429,10 @@ class PKLPipelineUI(object):
             parent=main_col
         )
         cmds.columnLayout(adjustableColumn=True)
-        # cmds.button(label="Check for Errors", command=Check_errors)
+        cmds.button(label="Check for Errors", command=Check_errors)
         cmds.button(label="Export all", command=export_all)
         cmds.button(label="Export Selected Groups", command=export_all)
-        cmds.button(label="Export Camera", command=export_all)
+        cmds.button(label="Export Camera", command=export_camera)
         cmds.setParent("..")
         cmds.setParent("..")
 
@@ -443,51 +481,49 @@ class PKLPipelineUI(object):
         cmds.setParent("..")
               
         cmds.setParent("..") 
-        cmds.setParent("..")
+        cmds.setParent("..") 
 
         cmds.text(label= 'Created by Franz Vega', 
             font="smallObliqueLabelFont",
             align="right",
             )
 
-
         cmds.showWindow(self.window)
+        
 
 
 ##-- MAIN FUNCTION
 def main():
-    """
-    Funcion principal que se llama desde el shelf button.
-    """
+    """Funcion principal con reload forzado"""
     global pkl_ui
     
-    try:
-        # Recargar modulos
-        import sys
-        if 'pipeline_ui' in sys.modules:
+    # 1. Forzar reload de TODOS los modulos
+    modules_to_reload = [
+        'pipeline_ui',
+        'scene_checker', 
+        'animation_organizer',
+        'group_creator',
+        'camera_exporter',
+        'settings',
+        'helpers',
+        'update_checker',
+        'auto_updater'
+    ]
+    
+    for mod_name in modules_to_reload:
+        if mod_name in sys.modules:
             try:
-                reload(sys.modules['pipeline_ui'])
+                reload(sys.modules[mod_name])
             except NameError:
                 import importlib
-                importlib.reload(sys.modules['pipeline_ui'])
-        
-        for mod in ['scene_checker', 'animation_organizer', 'settings']:
-            if mod in sys.modules:
-                try:
-                    reload(sys.modules[mod])
-                except NameError:
-                    import importlib
-                    importlib.reload(sys.modules[mod])
-    except Exception as e:
-        print("Reload warning: {}".format(e))
+                importlib.reload(sys.modules[mod_name])
+            print("Reloaded: {}".format(mod_name))
     
-    # Crear/mostrar la UI
+    # 2. Borrar UI anterior si existe
+    if cmds.window("pkl_pipeline_ui_window", exists=True):
+        cmds.deleteUI("pkl_pipeline_ui_window")
+    
+    # 3. Crear UI nueva
     pkl_ui = PKLPipelineUI()
-    print("=" * 60)
-    print("PKL Pipeline v{} launched successfully!".format(VERSION))
-    print("=" * 60)
+    print("PKL Pipeline v{} RELOADED".format(VERSION))
     return pkl_ui
-
-
-if __name__ == "__main__":
-    main()

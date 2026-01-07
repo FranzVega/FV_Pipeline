@@ -4,7 +4,7 @@ setParent $currentShelf;
 string $asInstallScriptLocation=`asInstallScriptLocation`;
 if (`gmatch $asInstallScriptLocation "*\*"`)
 	$asInstallScriptLocation=`substituteAllString $asInstallScriptLocation "\\" "/"`;
-string $scriptName="pipeline_ui";
+string $scriptName="PKL Tool";
 string $sourceDir=$asInstallScriptLocation+"ui/";
 string $moduleName="pipeline_ui"; // El nombre del módulo Python (tu archivo .py sin la extensión)
 string $icon=$asInstallScriptLocation+"icons/pipeline_ui_Icon.png";
