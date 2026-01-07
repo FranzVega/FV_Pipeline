@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 """
 PKL Pipeline UI
 Drag & Drop installable version
@@ -7,28 +7,28 @@ import maya.cmds as cmds
 import sys
 import os
 
-# Setup paths - Para estructura: pkl_pipeline/ui/, pkl_pipeline/core/, pkl_pipeline/config/
+
 def setup_paths():
     """Configura los paths necesarios"""
-    # El install.mel agrega pkl_pipeline/ui/ a sys.path
-    # Necesitamos encontrar pkl_pipeline/ (el parent)
+    
+    
     
     ui_path = None
     for path in sys.path:
-        # Buscar un path que termine en 'ui' o 'ui/'
+        
         normalized = path.replace('\\', '/').rstrip('/')
         if normalized.endswith('/ui') or normalized.endswith('ui'):
-            # Verificar que pipeline_ui.py existe ahi
+            
             test_file = os.path.join(path, 'pipeline_ui.py')
             if os.path.exists(test_file):
                 ui_path = path
                 break
     
     if ui_path:
-        # Parent es pkl_pipeline/
+        
         parent_dir = os.path.dirname(ui_path.rstrip('/\\'))
         
-        # core y config estan al mismo nivel que ui
+        
         core_dir = os.path.join(parent_dir, 'core')
         config_dir = os.path.join(parent_dir, 'config')
         
@@ -38,7 +38,7 @@ def setup_paths():
         print("  Core dir:   {}".format(core_dir))
         print("  Config dir: {}".format(config_dir))
         
-        # Verificar que existen
+        
         if os.path.exists(core_dir):
             print("  [OK] Core directory found")
         else:
@@ -49,7 +49,7 @@ def setup_paths():
         else:
             print("  [ERROR] Config directory NOT found!")
         
-        # Agregar al path
+        
         for p in [parent_dir, core_dir, config_dir]:
             if p not in sys.path:
                 sys.path.insert(0, p)
@@ -60,10 +60,10 @@ def setup_paths():
         print("PKL Pipeline ERROR: Could not find UI directory")
         return False
 
-# Setup paths
+
 setup_paths()
 
-# Importar modulos core
+
 try:
     import scene_checker
     import animation_organizer
@@ -73,7 +73,7 @@ try:
     import camera_setter
     import model_checker
     
-    # Importar helpers para scene type
+    
     import sys
     import os
     ui_path_for_helpers = None
@@ -94,7 +94,7 @@ try:
     import helpers
     get_scene_type = helpers.get_scene_type
     
-    # Importar funciones con fallback
+    
     check_scene = getattr(scene_checker, 'check_scene', None)
     organize_animation = getattr(animation_organizer, 'organize_animation', None)
     create_main_group_func = getattr(group_creator, 'create_main_group', None)
@@ -102,7 +102,7 @@ try:
     set_camera_func = getattr(camera_setter, 'set_camera_attributes', None)
     check_model_func = getattr(model_checker, 'model_check_cleanup', None)
     
-    # Si no existen las funciones, crear fallbacks
+    
     if check_scene is None:
         print("  Warning: check_scene function not found in scene_checker module")
         def check_scene(): print("Scene Checked (No function found)")
@@ -131,7 +131,7 @@ except ImportError as e:
     print("Error: {}".format(e))
     import traceback
     traceback.print_exc()
-    # Fallback a funciones dummy
+    
     def check_scene(): print("Scene Checked (Fallback)")
     def organize_animation(): print("Animation Organized (Fallback)")
     def create_main_group_func(): print("Create Main Group (Fallback)")
@@ -139,7 +139,7 @@ except ImportError as e:
     VERSION = "1.0.0"
 
 
-##-- FUNCIONES DE PROCESO (Conectadas con Core)
+
 def CheckScene(*args): 
     """Llama al script 1 del core"""
     check_model_func()
@@ -151,8 +151,8 @@ def check_anim_scene(*args):
     print("Scene ready")
     
 def set_camera(*args): 
-    #print("Camera Set")
-    #camera_setter.set_camera_attributes()
+    
+    
     set_camera_func()
 
     
@@ -172,10 +172,10 @@ def export_selected(*args):
     
 def export_camera(*args):
     ue_cam_exporter()
-    #print("Camera exported")
+    
 
 
-##-- UI CLASS
+
 class PKLPipelineUI(object):
     def __init__(self):
         self.window_id = "pkl_pipeline_ui_window"
@@ -188,15 +188,15 @@ class PKLPipelineUI(object):
         Consulta los datos de la escena y actualiza las etiquetas de la UI.
         Ahora usa el helper get_scene_type() para deteccion inteligente
         """
-        # 1. Obtener tipo de escena desde helper
+        
         scene_type, type_color = get_scene_type()
 
-        # 2. Logica de Frame Range
+        
         start = cmds.playbackOptions(query=True, minTime=True)
         end = cmds.playbackOptions(query=True, maxTime=True)
         frame_range = "{0} - {1}".format(int(start), int(end))
 
-        # 3. Aplicar a la UI
+        
         cmds.text(self.type_label, edit=True, label=scene_type, backgroundColor=type_color)
         cmds.text(self.range_label, edit=True, label=frame_range)
         
@@ -208,11 +208,11 @@ class PKLPipelineUI(object):
         Si hay update, ofrece instalarlo directamente
         """
         try:
-            # Importar update checker con manejo robusto de paths
+            
             import sys
             import os
             
-            # Encontrar el directorio pkl_pipeline
+            
             ui_path = None
             for path in sys.path:
                 normalized = path.replace('\\', '/').rstrip('/')
@@ -229,12 +229,12 @@ class PKLPipelineUI(object):
                 if utils_dir not in sys.path:
                     sys.path.insert(0, utils_dir)
                 
-                # Intentar importar
+                
                 import update_checker
                 
                 result = update_checker.check_updates()
                 
-                # Si hay update disponible, ofrecer instalarlo
+                
                 if result.get('available'):
                     message = "Update Available!\n\n"
                     message += "Current Version: {}\n".format(result.get('current_version'))
@@ -251,12 +251,12 @@ class PKLPipelineUI(object):
                         icon='information'
                     )
                     
-                    # Si el usuario quiere actualizar, llamar a auto_update
+                    
                     if response == 'Update Now':
                         self.auto_update_pipeline()
                     
                 else:
-                    # No hay updates
+                    
                     message = result.get('message', 'You are up to date!')
                     if 'error' in result:
                         message += "\n\nNote: {}".format(result['error'])
@@ -288,11 +288,11 @@ class PKLPipelineUI(object):
         Puede ser llamado directamente o desde check_for_updates
         """
         try:
-            # Importar auto_updater
+            
             import sys
             import os
             
-            # Encontrar utils directory
+            
             ui_path = None
             for path in sys.path:
                 normalized = path.replace('\\', '/').rstrip('/')
@@ -309,7 +309,7 @@ class PKLPipelineUI(object):
                 if utils_dir not in sys.path:
                     sys.path.insert(0, utils_dir)
                 
-                # Recargar si ya existe
+                
                 if 'auto_updater' in sys.modules:
                     del sys.modules['auto_updater']
                 
@@ -334,7 +334,7 @@ class PKLPipelineUI(object):
                         icon='information'
                     )
                     
-                    # Cerrar la UI automaticamente
+                    
                     if cmds.window(self.window_id, exists=True):
                         cmds.deleteUI(self.window_id)
                     
@@ -379,13 +379,13 @@ class PKLPipelineUI(object):
         main_scroll = cmds.scrollLayout(childResizable=True)
         main_col = cmds.columnLayout(adjustableColumn=True, parent=main_scroll)
 
-        ## AQUI EMPIEZA LA UI
+        
         cmds.separator(height=20, style="out")
            
         
         cmds.separator(height=20, style="in")
 
-        # --- Section 1: Character & Prop ---
+        
         cmds.frameLayout(
             label="Organize Character and Prop", 
             collapsable=True,
@@ -398,11 +398,11 @@ class PKLPipelineUI(object):
         cmds.button(label="Check Scene", command=CheckScene, 
                    annotation="Ejecuta el Script 1: Scene Checker")
         cmds.button(label="Create main group", command=create_main_group)
-        #cmds.checkBox(label="AdvancedSkeleton Logic")
+        
         cmds.setParent("..")
         cmds.setParent("..")
 
-        # --- Section 2: Animation Organization ---
+        
         cmds.frameLayout(
             label="Animation Scene Organization", 
             collapsable=True,
@@ -419,7 +419,7 @@ class PKLPipelineUI(object):
         cmds.setParent("..")
         cmds.setParent("..")
 
-        # --- Section 3: Export to Unreal ---
+        
         cmds.frameLayout(
             label="Export to Unreal", 
             collapsable=True, 
@@ -436,7 +436,7 @@ class PKLPipelineUI(object):
         cmds.setParent("..")
         cmds.setParent("..")
 
-        # --- Section 4: Scene Info ---
+        
         cmds.frameLayout(
             label="Scene Info", 
             collapsable=True, 
@@ -446,19 +446,19 @@ class PKLPipelineUI(object):
         )
         cmds.columnLayout(adjustableColumn=True, rowSpacing=5) 
         
-        # Fila 1: Tipo de Escena
+        
         cmds.rowLayout(numberOfColumns=2, adjustableColumn=2, columnWidth2=[85, 100])
         cmds.text(label="Scene Type:", align="left", font="boldLabelFont")
         self.type_label = cmds.text(label="Detecting...", align="center")
         cmds.setParent("..")
         
-        # Fila 2: Rango de Frames
+        
         cmds.rowLayout(numberOfColumns=2, adjustableColumn=2, columnWidth2=[85, 100])
         cmds.text(label="Frame Range:", align="left", font="boldLabelFont")
         self.range_label = cmds.text(label="0 - 0", align="center")
         cmds.setParent("..")
         
-        # Fila 3: Version
+        
         cmds.rowLayout(numberOfColumns=2, adjustableColumn=2, columnWidth2=[85, 100])
         cmds.text(label="Version:", align="left", font="boldLabelFont")
         cmds.text(label=VERSION, align="center", backgroundColor=[0.2, 0.2, 0.3])
@@ -466,7 +466,7 @@ class PKLPipelineUI(object):
        
         cmds.separator(height=10, style="in")
         
-        # Botones de accion
+        
         cmds.rowLayout(numberOfColumns=2, columnWidth2=[150, 150], columnAttach=[(1,'both',2), (2,'both',2)])
         cmds.button(
             label="UPDATE SCENE INFO", 
@@ -492,12 +492,12 @@ class PKLPipelineUI(object):
         
 
 
-##-- MAIN FUNCTION
+
 def main():
     """Funcion principal con reload forzado"""
     global pkl_ui
     
-    # 1. Forzar reload de TODOS los modulos
+    
     modules_to_reload = [
         'pipeline_ui',
         'scene_checker', 
@@ -519,11 +519,12 @@ def main():
                 importlib.reload(sys.modules[mod_name])
             print("Reloaded: {}".format(mod_name))
     
-    # 2. Borrar UI anterior si existe
+    
     if cmds.window("pkl_pipeline_ui_window", exists=True):
         cmds.deleteUI("pkl_pipeline_ui_window")
     
-    # 3. Crear UI nueva
+    
     pkl_ui = PKLPipelineUI()
     print("PKL Pipeline v{} RELOADED".format(VERSION))
+
     return pkl_ui
