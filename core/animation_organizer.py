@@ -268,6 +268,29 @@ def organize_animation():
     print("PKL PIPELINE - ANIMATION ORGANIZER")
     print("=" * 60)
     
+    # Validar que estamos en una escena de animacion
+    scene_name = cmds.file(query=True, sceneName=True, shortName=True)
+    
+    if not scene_name:
+        cmds.warning("Scene must be saved before organizing")
+        cmds.confirmDialog(
+            title='Scene Not Saved',
+            message='Please save the scene before organizing.',
+            button=['OK'],
+            icon='warning'
+        )
+        return False
+    
+    if '_anim_' not in scene_name.lower():
+        cmds.warning("This is not an animation scene")
+        cmds.confirmDialog(
+            title='Not an Animation Scene',
+            message='Currently this is not an Animation Scene \n or is not in the pipeline workflow.',
+            button=['OK'],
+            icon='warning'
+        )
+        return False
+    
     # Obtener datos de la escena (usando helpers)
     scene_data = get_scene_data()
     
