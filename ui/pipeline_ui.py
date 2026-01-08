@@ -72,6 +72,7 @@ try:
     import camera_exporter
     import camera_setter
     import model_checker
+    import skeleton_marker
     
     # Importar helpers para scene type
     import sys
@@ -101,7 +102,8 @@ try:
     ue_cam_exporter = getattr(camera_exporter, "export_ue_camera", None)
     set_camera_func = getattr(camera_setter, 'set_camera_attributes', None)
     check_model_func = getattr(model_checker, 'model_check_cleanup', None)
-    
+    set_joint_func = getattr(skeleton_marker, 'mark_skeleton_exportable', None)
+
     # Si no existen las funciones, crear fallbacks
     if check_scene is None:
         print("  Warning: check_scene function not found in scene_checker module")
@@ -122,6 +124,10 @@ try:
     if check_model_func is None:
         print("  Warning: function not found in camera_setter module")
         def check_model_func(): print("(No function found)")
+   
+    if set_joint_func is None:
+        print("  Warning: function not found in module")
+        def set_joint_func(): print("(No function found)")
     VERSION = settings.VERSION
     
     print("PKL Pipeline: Core modules loaded successfully! v{}".format(VERSION))
@@ -143,6 +149,9 @@ except ImportError as e:
 def CheckScene(*args): 
     """Llama al script 1 del core"""
     check_model_func()
+def SetJoints(*args): 
+    set_joint_func()
+    #print("Joint Set")
     
 def create_main_group(*args): 
     create_main_group_func()
@@ -226,7 +235,7 @@ class PKLPipelineUI(object):
 
         if cmds.confirmDialog(
             title="Update Pipeline",
-            message="This will check and update the pipeline.\n\nMaya must be restarted after update.",
+            message="This will check and update PKL Tool.\n\nMaya must be restarted after update.",
             button=["Update", "Cancel"],
             defaultButton="Update",
             cancelButton="Cancel",
@@ -284,7 +293,7 @@ class PKLPipelineUI(object):
 
         # --- Section 1: Character & Prop ---
         cmds.frameLayout(
-            label="Organize Character and Prop", 
+            label="Character and Prop Organizer", 
             collapsable=True,
             collapse=True,  
             marginWidth=5, 
@@ -293,15 +302,16 @@ class PKLPipelineUI(object):
         )
         cmds.columnLayout(adjustableColumn=True)
         cmds.button(label="Check Scene", command=CheckScene, 
-                   annotation="Ejecuta el Script 1: Scene Checker")
+                   annotation="Look for possible errors")
         cmds.button(label="Create main group", command=create_main_group)
+        cmds.button(label="Set Joints", command=SetJoints, annotation="Set the Skeleton to be exported")
         #cmds.checkBox(label="AdvancedSkeleton Logic")
         cmds.setParent("..")
         cmds.setParent("..")
 
         # --- Section 2: Animation Organization ---
         cmds.frameLayout(
-            label="Animation Scene Organization", 
+            label="Animation Scene Organizer", 
             collapsable=True,
             collapse=True, 
             marginWidth=5, 
@@ -371,7 +381,7 @@ class PKLPipelineUI(object):
             backgroundColor=[0.2, 0.2, 0.2]
         )
         cmds.button(
-            label="UPDATE TOOL", 
+            label="UPDATE PKL TOOL", 
             command=self.launch_external_updater,
             backgroundColor=[0.2, 0.3, 0.2]
         )
