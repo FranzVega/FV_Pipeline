@@ -149,9 +149,9 @@ except ImportError as e:
 def CheckScene(*args): 
     """Llama al script 1 del core"""
     check_model_func()
+
 def SetJoints(*args): 
     set_joint_func()
-    #print("Joint Set")
     
 def create_main_group(*args): 
     create_main_group_func()
@@ -160,15 +160,11 @@ def check_anim_scene(*args):
     print("Scene ready")
     
 def set_camera(*args): 
-    #print("Camera Set")
-    #camera_setter.set_camera_attributes()
     set_camera_func()
-
     
 def orgAnim(*args): 
     """Llama al script 2 del core"""
     organize_animation()
-    
     
 def Check_errors(*args): 
     print("Errores")
@@ -181,8 +177,70 @@ def export_selected(*args):
     
 def export_camera(*args):
     ue_cam_exporter()
-    #print("Camera exported")
 
+
+##-- FUNCIONES DE UPDATE
+
+def silent_check_update_on_startup():
+    """
+    Ejecuta check_update.bat en background al abrir la UI
+    El bat verifica versiones y crea .update_available si hay update
+    """
+    import subprocess
+    
+    try:
+        # Encontrar el bat checker
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        utils_dir = os.path.join(parent_dir, 'utils')
+        check_bat = os.path.join(utils_dir, 'check_update.bat')
+        
+        if not os.path.exists(check_bat):
+            print("Warning: check_update.bat not found at {}".format(check_bat))
+            return False
+        
+        # Ejecutar en background silencioso (sin ventana)
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = 0  # SW_HIDE
+        
+        subprocess.Popen(
+            [check_bat],
+            startupinfo=startupinfo,
+            creationflags=subprocess.CREATE_NO_WINDOW
+        )
+        
+        print("PKL Pipeline: Checking for updates in background...")
+        return True
+        
+    except Exception as e:
+        print("Update check error: {}".format(e))
+        return False
+
+
+def check_for_update_signal():
+    """
+    Lee el archivo señal .update_available
+    Returns: (has_update, remote_version)
+    """
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        signal_file = os.path.join(parent_dir, '.update_available')
+        
+        if os.path.exists(signal_file):
+            # Leer version remota del archivo señal
+            with open(signal_file, 'r') as f:
+                remote_version = f.read().strip()
+            
+            print("PKL Pipeline: Update available - Remote version: {}".format(remote_version))
+            return (True, remote_version)
+        else:
+            return (False, None)
+            
+    except Exception as e:
+        print("Signal check error: {}".format(e))
+        return (False, None)
 
 
 ##-- UI CLASS
@@ -213,15 +271,15 @@ class PKLPipelineUI(object):
         print("UI Updated: {0} | Range: {1}".format(scene_type, frame_range))
     
     def launch_external_updater(self, *args):
-        import os
+        """
+        Lanza el updater completo (update.bat)
+        Este SI descarga y actualiza archivos
+        """
         import subprocess
 
-        updater_bat = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            #"updater",
-            "update.bat"
-        )
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        updater_bat = os.path.join(parent_dir, "update.bat")
         updater_bat = os.path.abspath(updater_bat)
 
         if not os.path.exists(updater_bat):
@@ -243,33 +301,15 @@ class PKLPipelineUI(object):
         ) != "Update":
             return
 
+        # Ejecutar update.bat
         subprocess.Popen(
             ['cmd.exe', '/c', updater_bat],
             creationflags=subprocess.CREATE_NEW_CONSOLE
         )
-    
-    def auto_update_pipeline(self, *args):
-        """
-        Lanza el updater externo (bat/exe).
-        Maya NO descarga ni reemplaza archivos.
-        """
-        try:
-            launch_external_updater()
-
-            # Cerrar la UI para evitar estados raros
-            if cmds.window(self.window_id, exists=True):
-                cmds.deleteUI(self.window_id)
-
-        except Exception as e:
-            cmds.confirmDialog(
-                title='Update Error',
-                message='Could not start updater.\n\n{}'.format(str(e)),
-                button=['OK'],
-                icon='critical'
-            )
-            import traceback
-            traceback.print_exc()
-
+        
+        # Cerrar la UI
+        if cmds.window(self.window_id, exists=True):
+            cmds.deleteUI(self.window_id)
 
     def create_ui(self):
         if cmds.window(self.window_id, exists=True):
@@ -287,7 +327,46 @@ class PKLPipelineUI(object):
 
         ## AQUI EMPIEZA LA UI
         cmds.separator(height=20, style="out")
-           
+        
+        # ========================================
+        # BANNER DE UPDATE (si hay disponible)
+        # ========================================
+        has_update, remote_version = check_for_update_signal()
+        
+        if has_update:
+            cmds.frameLayout(
+                label="",
+                borderStyle="etchedIn",
+                backgroundColor=[0.3, 0.5, 0.2],
+                marginWidth=5,
+                marginHeight=3,
+                parent=main_col
+            )
+            cmds.columnLayout(adjustableColumn=True, rowSpacing=3)
+            
+            cmds.text(
+                label="NEW UPDATE AVAILABLE!",
+                font="boldLabelFont",
+                backgroundColor=[0.4, 0.6, 0.3],
+                height=20
+            )
+            
+            if remote_version:
+                cmds.text(
+                    label="Version {} is ready to install".format(remote_version),
+                    font="smallPlainLabelFont",
+                    align="center"
+                )
+            
+            cmds.button(
+                label="UPDATE NOW",
+                height=25,
+                backgroundColor=[0.2, 0.4, 0.2],
+                command=self.launch_external_updater
+            )
+            
+            cmds.setParent("..")
+            cmds.setParent("..")
         
         cmds.separator(height=20, style="in")
 
@@ -305,7 +384,6 @@ class PKLPipelineUI(object):
                    annotation="Look for possible errors")
         cmds.button(label="Create main group", command=create_main_group)
         cmds.button(label="Set Joints", command=SetJoints, annotation="Set the Skeleton to be exported")
-        #cmds.checkBox(label="AdvancedSkeleton Logic")
         cmds.setParent("..")
         cmds.setParent("..")
 
@@ -322,7 +400,6 @@ class PKLPipelineUI(object):
         cmds.button(label="Check Animation Scene", command=check_anim_scene)
         cmds.button(label="Set Selected Camera", command=set_camera)
         cmds.button(label="Organize Scene", command=orgAnim)
-                   
         cmds.setParent("..")
         cmds.setParent("..")
 
@@ -390,31 +467,32 @@ class PKLPipelineUI(object):
         cmds.setParent("..") 
         cmds.setParent("..") 
 
-        cmds.text(label= 'Created by Franz Vega', 
+        cmds.text(label='Created by Franz Vega', 
             font="smallObliqueLabelFont",
             align="right",
-            )
+        )
 
         cmds.showWindow(self.window)
-        
 
 
 ##-- MAIN FUNCTION
 def main():
-    """Funcion principal con reload forzado"""
+    """Funcion principal con reload forzado y check de updates"""
     global pkl_ui
     
-    # 1. Forzar reload de TODOS los modulos
+    # 1. Ejecutar check de updates en background
+    silent_check_update_on_startup()
+    
+    # 2. Forzar reload de TODOS los modulos
     modules_to_reload = [
         'pipeline_ui',
         'scene_checker', 
         'animation_organizer',
         'group_creator',
         'camera_exporter',
+        'camera_setter',
         'settings',
-        'helpers',
-        'update_checker',
-        'auto_updater'
+        'helpers'
     ]
     
     for mod_name in modules_to_reload:
@@ -426,11 +504,17 @@ def main():
                 importlib.reload(sys.modules[mod_name])
             print("Reloaded: {}".format(mod_name))
     
-    # 2. Borrar UI anterior si existe
+    # 3. Borrar UI anterior si existe
     if cmds.window("pkl_pipeline_ui_window", exists=True):
         cmds.deleteUI("pkl_pipeline_ui_window")
     
-    # 3. Crear UI nueva
+    # 4. Crear UI nueva
     pkl_ui = PKLPipelineUI()
-    print("PKL Pipeline v{} RELOADED".format(VERSION))
+    print("=" * 60)
+    print("PKL Pipeline v{} LOADED".format(VERSION))
+    print("=" * 60)
     return pkl_ui
+
+
+if __name__ == "__main__":
+    main()
