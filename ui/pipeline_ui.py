@@ -136,7 +136,7 @@ except ImportError as e:
     def organize_animation(): print("Animation Organized (Fallback)")
     def create_main_group_func(): print("Create Main Group (Fallback)")
     def get_scene_type(): return ("UNIDENTIFIED", [1.0, 0.4, 0.4])
-    VERSION = "1.0.0"
+    VERSION = "PRUEBA"
 
 
 ##-- FUNCIONES DE PROCESO (Conectadas con Core)
@@ -175,6 +175,7 @@ def export_camera(*args):
     #print("Camera exported")
 
 
+
 ##-- UI CLASS
 class PKLPipelineUI(object):
     def __init__(self):
@@ -202,168 +203,64 @@ class PKLPipelineUI(object):
         
         print("UI Updated: {0} | Range: {1}".format(scene_type, frame_range))
     
-    def check_for_updates(self, *args):
-        """
-        Verifica si hay actualizaciones disponibles en GitHub
-        Si hay update, ofrece instalarlo directamente
-        """
-        try:
-            # Importar update checker con manejo robusto de paths
-            import sys
-            import os
-            
-            # Encontrar el directorio pkl_pipeline
-            ui_path = None
-            for path in sys.path:
-                normalized = path.replace('\\', '/').rstrip('/')
-                if normalized.endswith('/ui') or normalized.endswith('ui'):
-                    test_file = os.path.join(path, 'pipeline_ui.py')
-                    if os.path.exists(test_file):
-                        ui_path = path
-                        break
-            
-            if ui_path:
-                parent_dir = os.path.dirname(ui_path.rstrip('/\\'))
-                utils_dir = os.path.join(parent_dir, 'utils')
-                
-                if utils_dir not in sys.path:
-                    sys.path.insert(0, utils_dir)
-                
-                # Intentar importar
-                import update_checker
-                
-                result = update_checker.check_updates()
-                
-                # Si hay update disponible, ofrecer instalarlo
-                if result.get('available'):
-                    message = "Update Available!\n\n"
-                    message += "Current Version: {}\n".format(result.get('current_version'))
-                    message += "Latest Version:  {}\n\n".format(result.get('latest_version'))
-                    message += "Would you like to update now?\n\n"
-                    message += "(This will download and replace all files)"
-                    
-                    response = cmds.confirmDialog(
-                        title='Update Available',
-                        message=message,
-                        button=['Update Now', 'Cancel'],
-                        defaultButton='Update Now',
-                        cancelButton='Cancel',
-                        icon='information'
-                    )
-                    
-                    # Si el usuario quiere actualizar, llamar a auto_update
-                    if response == 'Update Now':
-                        self.auto_update_pipeline()
-                    
-                else:
-                    # No hay updates
-                    message = result.get('message', 'You are up to date!')
-                    if 'error' in result:
-                        message += "\n\nNote: {}".format(result['error'])
-                    
-                    cmds.confirmDialog(
-                        title='No Updates Available',
-                        message=message,
-                        button=['OK'],
-                        defaultButton='OK'
-                    )
-            else:
-                raise Exception("Could not find pkl_pipeline directory")
-        
-        except Exception as e:
-            error_msg = str(e)
+    def launch_external_updater(self, *args):
+        import os
+        import subprocess
+
+        updater_bat = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            #"updater",
+            "update.bat"
+        )
+        updater_bat = os.path.abspath(updater_bat)
+
+        if not os.path.exists(updater_bat):
             cmds.confirmDialog(
-                title='Error',
-                message="Could not check for updates.\n\nError: {}".format(error_msg),
-                button=['OK'],
-                icon='warning'
+                title="Updater Error",
+                message="Updater not found.\n\n{}".format(updater_bat),
+                button=["OK"],
+                icon="critical"
             )
-            print("Update check error: {}".format(error_msg))
-            import traceback
-            traceback.print_exc()
+            return
+
+        if cmds.confirmDialog(
+            title="Update Pipeline",
+            message="This will check and update the pipeline.\n\nMaya must be restarted after update.",
+            button=["Update", "Cancel"],
+            defaultButton="Update",
+            cancelButton="Cancel",
+            dismissString="Cancel"
+        ) != "Update":
+            return
+
+        subprocess.Popen(
+            ['cmd.exe', '/c', updater_bat],
+            creationflags=subprocess.CREATE_NEW_CONSOLE
+        )
     
     def auto_update_pipeline(self, *args):
         """
-        Ejecuta auto-update desde GitHub (reemplaza archivos SIN backup)
-        Puede ser llamado directamente o desde check_for_updates
+        Lanza el updater externo (bat/exe).
+        Maya NO descarga ni reemplaza archivos.
         """
         try:
-            # Importar auto_updater
-            import sys
-            import os
-            
-            # Encontrar utils directory
-            ui_path = None
-            for path in sys.path:
-                normalized = path.replace('\\', '/').rstrip('/')
-                if normalized.endswith('/ui') or normalized.endswith('ui'):
-                    test_file = os.path.join(path, 'pipeline_ui.py')
-                    if os.path.exists(test_file):
-                        ui_path = path
-                        break
-            
-            if ui_path:
-                parent_dir = os.path.dirname(ui_path.rstrip('/\\'))
-                utils_dir = os.path.join(parent_dir, 'utils')
-                
-                if utils_dir not in sys.path:
-                    sys.path.insert(0, utils_dir)
-                
-                # Recargar si ya existe
-                if 'auto_updater' in sys.modules:
-                    del sys.modules['auto_updater']
-                
-                import auto_updater
-                
-                print("\n" + "=" * 60)
-                print("STARTING AUTO UPDATE...")
-                print("=" * 60 + "\n")
-                
-                result = auto_updater.auto_update()
-                
-                if result['success']:
-                    message = "Update completed successfully!\n\n"
-                    message += "Updated {} files.\n\n".format(len(result['updated']))
-                    message += "The tool will now close.\n"
-                    message += "Please REOPEN it from the shelf to use the new version."
-                    
-                    cmds.confirmDialog(
-                        title='Update Complete',
-                        message=message,
-                        button=['OK'],
-                        icon='information'
-                    )
-                    
-                    # Cerrar la UI automaticamente
-                    if cmds.window(self.window_id, exists=True):
-                        cmds.deleteUI(self.window_id)
-                    
-                else:
-                    message = "Update completed with errors.\n\n"
-                    message += "Updated: {}\n".format(len(result.get('updated', [])))
-                    message += "Failed: {}\n\n".format(len(result.get('failed', [])))
-                    message += "Check Script Editor for details."
-                    
-                    cmds.confirmDialog(
-                        title='Update Incomplete',
-                        message=message,
-                        button=['OK'],
-                        icon='warning'
-                    )
-            
-            else:
-                raise Exception("Could not find utils directory")
-        
+            launch_external_updater()
+
+            # Cerrar la UI para evitar estados raros
+            if cmds.window(self.window_id, exists=True):
+                cmds.deleteUI(self.window_id)
+
         except Exception as e:
             cmds.confirmDialog(
                 title='Update Error',
-                message="Could not complete update.\n\nError: {}".format(str(e)),
+                message='Could not start updater.\n\n{}'.format(str(e)),
                 button=['OK'],
                 icon='critical'
             )
-            print("Auto-update error: {}".format(e))
             import traceback
             traceback.print_exc()
+
 
     def create_ui(self):
         if cmds.window(self.window_id, exists=True):
@@ -474,8 +371,8 @@ class PKLPipelineUI(object):
             backgroundColor=[0.2, 0.2, 0.2]
         )
         cmds.button(
-            label="CHECK FOR UPDATES", 
-            command=self.check_for_updates,
+            label="UPDATE TOOL", 
+            command=self.launch_external_updater,
             backgroundColor=[0.2, 0.3, 0.2]
         )
         cmds.setParent("..")
