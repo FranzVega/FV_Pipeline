@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 """
 PKL Pipeline UI
 Drag & Drop installable version
@@ -7,28 +7,29 @@ import maya.cmds as cmds
 import sys
 import os
 
-# Setup paths - Para estructura: pkl_pipeline/ui/, pkl_pipeline/core/, pkl_pipeline/config/
+
+
 def setup_paths():
     """Configura los paths necesarios"""
-    # El install.mel agrega pkl_pipeline/ui/ a sys.path
-    # Necesitamos encontrar pkl_pipeline/ (el parent)
+    
+    
     
     ui_path = None
     for path in sys.path:
-        # Buscar un path que termine en 'ui' o 'ui/'
+        
         normalized = path.replace('\\', '/').rstrip('/')
         if normalized.endswith('/ui') or normalized.endswith('ui'):
-            # Verificar que pipeline_ui.py existe ahi
+            
             test_file = os.path.join(path, 'pipeline_ui.py')
             if os.path.exists(test_file):
                 ui_path = path
                 break
     
     if ui_path:
-        # Parent es pkl_pipeline/
+        
         parent_dir = os.path.dirname(ui_path.rstrip('/\\'))
         
-        # core y config estan al mismo nivel que ui
+        
         core_dir = os.path.join(parent_dir, 'core')
         config_dir = os.path.join(parent_dir, 'config')
         
@@ -38,7 +39,7 @@ def setup_paths():
         print("  Core dir:   {}".format(core_dir))
         print("  Config dir: {}".format(config_dir))
         
-        # Verificar que existen
+        
         if os.path.exists(core_dir):
             print("  [OK] Core directory found")
         else:
@@ -49,7 +50,7 @@ def setup_paths():
         else:
             print("  [ERROR] Config directory NOT found!")
         
-        # Agregar al path
+        
         for p in [parent_dir, core_dir, config_dir]:
             if p not in sys.path:
                 sys.path.insert(0, p)
@@ -60,11 +61,12 @@ def setup_paths():
         print("PKL Pipeline ERROR: Could not find UI directory")
         return False
 
-# Setup paths
+
 setup_paths()
 
-# Importar modulos core
+
 try:
+    import security
     import scene_checker
     import animation_organizer
     import group_creator
@@ -73,8 +75,10 @@ try:
     import camera_setter
     import model_checker
     import skeleton_marker
+    import scene_exporter
+    import export_selected_grp
+
     
-    # Importar helpers para scene type
     import sys
     import os
     ui_path_for_helpers = None
@@ -95,7 +99,7 @@ try:
     import helpers
     get_scene_type = helpers.get_scene_type
     
-    # Importar funciones con fallback
+    
     check_scene = getattr(scene_checker, 'check_scene', None)
     organize_animation = getattr(animation_organizer, 'organize_animation', None)
     create_main_group_func = getattr(group_creator, 'create_main_group', None)
@@ -103,8 +107,10 @@ try:
     set_camera_func = getattr(camera_setter, 'set_camera_attributes', None)
     check_model_func = getattr(model_checker, 'model_check_cleanup', None)
     set_joint_func = getattr(skeleton_marker, 'mark_skeleton_exportable', None)
+    export_all_func = getattr(scene_exporter, 'export_scene', None)
+    export_selected_func = getattr(export_selected_grp, 'export_selected', None)
 
-    # Si no existen las funciones, crear fallbacks
+    
     if check_scene is None:
         print("  Warning: check_scene function not found in scene_checker module")
         def check_scene(): print("Scene Checked (No function found)")
@@ -128,6 +134,15 @@ try:
     if set_joint_func is None:
         print("  Warning: function not found in module")
         def set_joint_func(): print("(No function found)")
+    
+    if export_all_func is None:
+        print("  Warning: function not found in module")
+        def export_all_func(): print("(No function found)")
+   
+    if export_selected_func is None:
+        print("  Warning: export_selected function not found in export_selected module")
+        def export_selected_func(): print("Export Selected (No function found)")
+   
     VERSION = settings.VERSION
     
     print("PKL Pipeline: Core modules loaded successfully! v{}".format(VERSION))
@@ -137,7 +152,7 @@ except ImportError as e:
     print("Error: {}".format(e))
     import traceback
     traceback.print_exc()
-    # Fallback a funciones dummy
+    
     def check_scene(): print("Scene Checked (Fallback)")
     def organize_animation(): print("Animation Organized (Fallback)")
     def create_main_group_func(): print("Create Main Group (Fallback)")
@@ -145,41 +160,74 @@ except ImportError as e:
     VERSION = "PRUEBA"
 
 
-##-- FUNCIONES DE PROCESO (Conectadas con Core)
+
 def CheckScene(*args): 
-    """Llama al script 1 del core"""
+    
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return
+    
     check_model_func()
 
-def SetJoints(*args): 
+def SetJoints(*args):
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return 
     set_joint_func()
     
 def create_main_group(*args): 
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return
     create_main_group_func()
     
-def check_anim_scene(*args): 
+def check_anim_scene(*args):
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return
     print("Scene ready")
     
 def set_camera(*args): 
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return
     set_camera_func()
     
 def orgAnim(*args): 
     """Llama al script 2 del core"""
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return
     organize_animation()
     
 def Check_errors(*args): 
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return
     print("Errores")
     
 def export_all(*args): 
-    print("Export all")
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return
+    export_all_func()
+    ue_cam_exporter()
     
-def export_selected(*args): 
-    print("Selected groups exported")
+def export_selected(*args):
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return
+    export_selected_func()
+    
     
 def export_camera(*args):
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return
     ue_cam_exporter()
 
 
-##-- FUNCIONES DE UPDATE
+
 
 def silent_check_update_on_startup():
     """
@@ -189,7 +237,7 @@ def silent_check_update_on_startup():
     import subprocess
     
     try:
-        # Encontrar el bat checker
+        
         current_dir = os.path.dirname(os.path.abspath(__file__))
         parent_dir = os.path.dirname(current_dir)
         utils_dir = os.path.join(parent_dir, 'utils')
@@ -199,10 +247,10 @@ def silent_check_update_on_startup():
             print("Warning: check_update.bat not found at {}".format(check_bat))
             return False
         
-        # Ejecutar en background silencioso (sin ventana)
+        
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        startupinfo.wShowWindow = 0  # SW_HIDE
+        startupinfo.wShowWindow = 0  
         
         subprocess.Popen(
             [check_bat],
@@ -229,7 +277,7 @@ def check_for_update_signal():
         signal_file = os.path.join(parent_dir, '.update_available')
         
         if os.path.exists(signal_file):
-            # Leer version remota del archivo señal
+            
             with open(signal_file, 'r') as f:
                 remote_version = f.read().strip()
             
@@ -243,7 +291,7 @@ def check_for_update_signal():
         return (False, None)
 
 
-##-- UI CLASS
+
 class PKLPipelineUI(object):
     def __init__(self):
         self.window_id = "pkl_pipeline_ui_window"
@@ -256,15 +304,15 @@ class PKLPipelineUI(object):
         Consulta los datos de la escena y actualiza las etiquetas de la UI.
         Ahora usa el helper get_scene_type() para deteccion inteligente
         """
-        # 1. Obtener tipo de escena desde helper
+        
         scene_type, type_color = get_scene_type()
 
-        # 2. Logica de Frame Range
+        
         start = cmds.playbackOptions(query=True, minTime=True)
         end = cmds.playbackOptions(query=True, maxTime=True)
         frame_range = "{0} - {1}".format(int(start), int(end))
 
-        # 3. Aplicar a la UI
+        
         cmds.text(self.type_label, edit=True, label=scene_type, backgroundColor=type_color)
         cmds.text(self.range_label, edit=True, label=frame_range)
         
@@ -301,13 +349,13 @@ class PKLPipelineUI(object):
         ) != "Update":
             return
 
-        # Ejecutar update.bat
+        
         subprocess.Popen(
             ['cmd.exe', '/c', updater_bat],
             creationflags=subprocess.CREATE_NEW_CONSOLE
         )
         
-        # Cerrar la UI
+        
         if cmds.window(self.window_id, exists=True):
             cmds.deleteUI(self.window_id)
 
@@ -325,12 +373,12 @@ class PKLPipelineUI(object):
         main_scroll = cmds.scrollLayout(childResizable=True)
         main_col = cmds.columnLayout(adjustableColumn=True, parent=main_scroll)
 
-        ## AQUI EMPIEZA LA UI
+        
         cmds.separator(height=20, style="out")
         
-        # ========================================
-        # BANNER DE UPDATE (si hay disponible)
-        # ========================================
+        
+        
+        
         has_update, remote_version = check_for_update_signal()
         
         if has_update:
@@ -370,7 +418,7 @@ class PKLPipelineUI(object):
         
         cmds.separator(height=20, style="in")
 
-        # --- Section 1: Character & Prop ---
+        
         cmds.frameLayout(
             label="Character and Prop Organizer", 
             collapsable=True,
@@ -387,7 +435,7 @@ class PKLPipelineUI(object):
         cmds.setParent("..")
         cmds.setParent("..")
 
-        # --- Section 2: Animation Organization ---
+        
         cmds.frameLayout(
             label="Animation Scene Organizer", 
             collapsable=True,
@@ -403,7 +451,7 @@ class PKLPipelineUI(object):
         cmds.setParent("..")
         cmds.setParent("..")
 
-        # --- Section 3: Export to Unreal ---
+        
         cmds.frameLayout(
             label="Export to Unreal", 
             collapsable=True, 
@@ -415,12 +463,12 @@ class PKLPipelineUI(object):
         cmds.columnLayout(adjustableColumn=True)
         cmds.button(label="Check for Errors", command=Check_errors)
         cmds.button(label="Export all", command=export_all)
-        cmds.button(label="Export Selected Groups", command=export_all)
+        cmds.button(label="Export Selected Groups", command=export_selected)
         cmds.button(label="Export Camera", command=export_camera)
         cmds.setParent("..")
         cmds.setParent("..")
 
-        # --- Section 4: Scene Info ---
+        
         cmds.frameLayout(
             label="Scene Info", 
             collapsable=True, 
@@ -430,19 +478,19 @@ class PKLPipelineUI(object):
         )
         cmds.columnLayout(adjustableColumn=True, rowSpacing=5) 
         
-        # Fila 1: Tipo de Escena
+        
         cmds.rowLayout(numberOfColumns=2, adjustableColumn=2, columnWidth2=[85, 100])
         cmds.text(label="Scene Type:", align="left", font="boldLabelFont")
         self.type_label = cmds.text(label="Detecting...", align="center")
         cmds.setParent("..")
         
-        # Fila 2: Rango de Frames
+        
         cmds.rowLayout(numberOfColumns=2, adjustableColumn=2, columnWidth2=[85, 100])
         cmds.text(label="Frame Range:", align="left", font="boldLabelFont")
         self.range_label = cmds.text(label="0 - 0", align="center")
         cmds.setParent("..")
         
-        # Fila 3: Version
+        
         cmds.rowLayout(numberOfColumns=2, adjustableColumn=2, columnWidth2=[85, 100])
         cmds.text(label="Version:", align="left", font="boldLabelFont")
         cmds.text(label=VERSION, align="center", backgroundColor=[0.2, 0.2, 0.3])
@@ -450,7 +498,7 @@ class PKLPipelineUI(object):
        
         cmds.separator(height=10, style="in")
         
-        # Botones de accion
+        
         cmds.rowLayout(numberOfColumns=2, columnWidth2=[150, 150], columnAttach=[(1,'both',2), (2,'both',2)])
         cmds.button(
             label="UPDATE SCENE INFO", 
@@ -475,16 +523,28 @@ class PKLPipelineUI(object):
         cmds.showWindow(self.window)
 
 
-##-- MAIN FUNCTION
+
 def main():
-    """Funcion principal con reload forzado y check de updates"""
+    """Main function with security check and UI launch"""
     global pkl_ui
     
-    # 1. Ejecutar check de updates en background
+    
+    
+    try:
+        import security
+        if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return 
+    except ImportError:
+        print("Security Error: Could not find security module. Access denied.")
+        return
+
+    
     silent_check_update_on_startup()
     
-    # 2. Forzar reload de TODOS los modulos
+    
     modules_to_reload = [
+        'security',
         'pipeline_ui',
         'scene_checker', 
         'animation_organizer',
@@ -498,23 +558,21 @@ def main():
     for mod_name in modules_to_reload:
         if mod_name in sys.modules:
             try:
-                reload(sys.modules[mod_name])
-            except NameError:
                 import importlib
                 importlib.reload(sys.modules[mod_name])
-            print("Reloaded: {}".format(mod_name))
+            except:
+                pass
     
-    # 3. Borrar UI anterior si existe
+    
     if cmds.window("pkl_pipeline_ui_window", exists=True):
         cmds.deleteUI("pkl_pipeline_ui_window")
     
-    # 4. Crear UI nueva
+    
     pkl_ui = PKLPipelineUI()
     print("=" * 60)
-    print("PKL Pipeline v{} LOADED".format(VERSION))
+    print("PKL Pipeline v{} LOADED SUCCESSFULLY".format(VERSION))
     print("=" * 60)
     return pkl_ui
-
 
 if __name__ == "__main__":
     main()
