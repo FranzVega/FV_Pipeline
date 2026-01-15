@@ -38,6 +38,7 @@ def create_main_group():
     """
     FUNCION PRINCIPAL - Crea grupo MASTER desde nombre de archivo
     Organiza Assets (CH y PR) creando el MASTER_GRP con atributos.
+    SOLO funciona en escenas de MODEL o RIG.
     """
     print("\n" + "=" * 60)
     print("PKL PIPELINE - GROUP CREATOR")
@@ -47,7 +48,7 @@ def create_main_group():
     ruta_completa = cmds.file(query=True, sceneName=True)
     
     if not ruta_completa:
-        cmds.warning("Por favor, guarda la escena antes de ejecutar el script.")
+        cmds.warning("Please save the scene before running this tool")
         cmds.confirmDialog(
             title='Scene Not Saved',
             message='Please save the scene before running this tool.',
@@ -59,9 +60,42 @@ def create_main_group():
     nombre_archivo = os.path.basename(ruta_completa)
     nombre_base = os.path.splitext(nombre_archivo)[0]
     
-    print("\nArchivo: {}".format(nombre_archivo))
+    print("\nFile: {}".format(nombre_archivo))
 
-    # 2. Extraccion de datos con Regex
+    # 2. VALIDACION: Solo permite model o rig
+    id_match = re.search(r"(rig|textures|model)", nombre_base, re.IGNORECASE)
+    
+    if not id_match:
+        cmds.warning("Scene name must contain 'model', 'rig', or 'textures'")
+        cmds.confirmDialog(
+            title='Invalid Scene Type',
+            message='This option only works on MODEL or RIG scenes.\n\n'
+                    'Example: CH_hero_model_v01.ma',
+            button=['OK'],
+            icon='warning'
+        )
+        return False
+    
+    found = id_match.group(1).lower()
+    id_val = "RIG" if found == "textures" else found.upper()
+    
+    # Validacion adicional: rechazar escenas de animacion
+    if re.search(r"_anim_", nombre_base, re.IGNORECASE):
+        cmds.warning("Cannot run on animation scenes")
+        cmds.confirmDialog(
+            title='Invalid Scene Type',
+            message='This option does not work on ANIMATION scenes.\n\n'
+                    'Please use this tool only on:\n'
+                    '  - MODEL scenes\n'
+                    '  - RIG scenes',
+            button=['OK'],
+            icon='warning'
+        )
+        return False
+    
+    print("  Scene Type: {} (valid)".format(id_val))
+
+    # 3. Extraccion de datos con Regex
     
     # Categoria (CH, PR, etc)
     cat_match = re.search(r"^([a-zA-Z]+)_", nombre_base)
@@ -79,30 +113,22 @@ def create_main_group():
         name_val_group = "UNKNOWN"
     
     print("  Name: {}".format(name_val_attr))
-
-    # ID (rig, model, etc)
-    id_match = re.search(r"(rig|textures|model)", nombre_base, re.IGNORECASE)
-    id_val = "RIG"  # Default
-    if id_match:
-        found = id_match.group(1).lower()
-        id_val = "RIG" if found == "textures" else found.upper()
-    
     print("  ID: {}".format(id_val))
 
-    # 3. Construccion del Master Group
+    # 4. Construccion del Master Group
     nombre_grupo_final = "{}_{}_{}_MASTER_GRP".format(
         category_val, name_val_group, id_val
     )
     
-    print("\nProcesando grupo: {}".format(nombre_grupo_final))
+    print("\nProcessing group: {}".format(nombre_grupo_final))
 
-    # 4. Verificar si existe el grupo
+    # 5. Verificar si existe el grupo
     if cmds.objExists(nombre_grupo_final):
-        print("  El grupo ya existe. Actualizando atributos...")
+        print("  Group already exists. Updating attributes...")
         master_grp = nombre_grupo_final
         
         # Agregar/actualizar atributos usando helpers
-        print("  Verificando/actualizando atributos...")
+        print("  Verifying/updating attributes...")
         set_locked_attribute(master_grp, "Hierarchy", "{Name}_#")
         set_locked_attribute(master_grp, "Category", category_val)
         set_locked_attribute(master_grp, "Name", name_val_attr)
@@ -111,7 +137,7 @@ def create_main_group():
         cmds.select(master_grp, replace=True)
         
         print("\n" + "=" * 60)
-        print("ATRIBUTOS ACTUALIZADOS EXITOSAMENTE")
+        print("ATTRIBUTES UPDATED SUCCESSFULLY")
         print("=" * 60 + "\n")
         
         # Actualizar Attribute Editor
@@ -122,7 +148,7 @@ def create_main_group():
         
         return True
 
-    # 5. Si no existe, crear el grupo
+    # 6. Si no existe, crear el grupo
     cmds.select(all=True)
     seleccion = cmds.ls(selection=True)
     
@@ -140,7 +166,7 @@ def create_main_group():
             to_group.append(obj)
     
     if not to_group:
-        cmds.warning("No hay objetos validos para agrupar.")
+        cmds.warning("No valid objects to group")
         cmds.confirmDialog(
             title='No Objects Found',
             message='No valid objects found to group.',
@@ -149,13 +175,13 @@ def create_main_group():
         )
         return False
     
-    print("  Agrupando {} objetos...".format(len(to_group)))
+    print("  Grouping {} objects...".format(len(to_group)))
 
     cmds.select(to_group, replace=True)
     master_grp = cmds.group(name=nombre_grupo_final)
 
-    # 5. Crear atributos usando helpers
-    print("  Agregando atributos...")
+    # 7. Crear atributos usando helpers
+    print("  Adding attributes...")
     set_locked_attribute(master_grp, "Hierarchy", "{Name}_#")
     set_locked_attribute(master_grp, "Category", category_val)
     set_locked_attribute(master_grp, "Name", name_val_attr)
@@ -164,7 +190,7 @@ def create_main_group():
     cmds.select(master_grp, replace=True)
     
     print("\n" + "=" * 60)
-    print("GRUPO CREADO EXITOSAMENTE")
+    print("GROUP CREATED SUCCESSFULLY")
     print("=" * 60 + "\n")
     
     # Actualizar Attribute Editor
