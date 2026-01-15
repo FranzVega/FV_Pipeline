@@ -77,6 +77,7 @@ try:
     import skeleton_marker
     import scene_exporter
     import export_selected_grp
+    import check_anm_scn
 
     
     import sys
@@ -109,6 +110,7 @@ try:
     set_joint_func = getattr(skeleton_marker, 'mark_skeleton_exportable', None)
     export_all_func = getattr(scene_exporter, 'export_scene', None)
     export_selected_func = getattr(export_selected_grp, 'export_selected', None)
+    check_animation_scene = check_anm_scn.check_animation_scene
 
     
     if check_scene is None:
@@ -186,6 +188,7 @@ def check_anim_scene(*args):
             print("Access Denied: Incorrect Project.")
             return
     print("Scene ready")
+    check_animation_scene()
     
 def set_camera(*args): 
     if not security.validate_pinkooland_project():
@@ -205,6 +208,7 @@ def Check_errors(*args):
             print("Access Denied: Incorrect Project.")
             return
     print("Errores")
+    check_animation_scene()
     
 def export_all(*args): 
     if not security.validate_pinkooland_project():
