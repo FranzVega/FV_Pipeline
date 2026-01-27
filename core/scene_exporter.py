@@ -288,7 +288,7 @@ def export_scene():
     }
     
     for group_data in exportable_groups:
-        result = export_group_to_fbx(group_data, start_frame, end_frame)
+        result = export_group_to_fbx(group_data, start_frame-5, end_frame+5)
         
         if result['success']:
             results['success'].append({
