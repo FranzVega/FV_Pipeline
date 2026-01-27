@@ -211,7 +211,7 @@ def export_selected_func():
     fail_list = []
 
     for node in nodes_to_export:
-        result = export_group_to_fbx(node, start, end)
+        result = export_group_to_fbx(node, start-5, end+5)
         if result['success']:
             success_list.append(node)
         else:
