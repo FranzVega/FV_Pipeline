@@ -148,13 +148,13 @@ def export_ue_camera():
     range_match = re.search(r'_FR_(\d+)_(\d+)', camera)
     
     if range_match:
-        start_frame = int(range_match.group(1))
-        end_frame = int(range_match.group(2))
+        start_frame = int(range_match.group(1))-5
+        end_frame = int(range_match.group(2))+5
         print("  Frame range from camera name: {} - {}".format(start_frame, end_frame))
     else:
         # Usar timeline actual
-        start_frame = int(cmds.playbackOptions(query=True, minTime=True))
-        end_frame = int(cmds.playbackOptions(query=True, maxTime=True))
+        start_frame = int(cmds.playbackOptions(query=True, minTime=True))-5
+        end_frame = int(cmds.playbackOptions(query=True, maxTime=True))+5
         print("  Frame range from timeline: {} - {}".format(start_frame, end_frame))
     
     # Configurar timeline
@@ -269,6 +269,9 @@ def export_ue_camera():
     
     cmds.select(new_cam_transform, r=True)
     mel.eval('FBXExport -f "{}" -s;'.format(fbx_path))
+
+    cmds.playbackOptions(min=start_frame+5, max=end_frame-5)
+    cmds.playbackOptions(animationStartTime=start_frame+5, animationEndTime=end_frame-5)
     
     # ===============================
     # 10. Limpieza si export ok
