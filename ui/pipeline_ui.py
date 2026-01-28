@@ -422,7 +422,8 @@ class PKLPipelineUI(object):
             if remote_version:
                 cmds.text(
                     label="Version {} is ready to install".format(remote_version),
-                    font="smallPlainLabelFont",
+                    font="boldLabelFont",
+                    height=20,
                     align="center"
                 )
             
