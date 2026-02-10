@@ -80,6 +80,7 @@ try:
     import check_anm_scn
     import camera_cleaner
     import skeleton_remover
+    import layout_exporter
 
     # Importar helpers para scene type
     import sys
@@ -115,6 +116,7 @@ try:
     check_animation_scene = check_anm_scn.check_animation_scene
     camera_cleaner_func = camera_cleaner.clean_camera
     skeleton_remover_func = skeleton_remover.remove_skeleton_exportable
+    layout_exporter_func = layout_exporter.export_layout
 
     # Si no existen las funciones, crear fallbacks
     if check_scene is None:
@@ -245,6 +247,12 @@ def export_camera(*args):
             print("Access Denied: Incorrect Project.")
             return
     ue_cam_exporter()
+
+def export_layout(*args):
+    if not security.validate_pinkooland_project():
+            print("Access Denied: Incorrect Project.")
+            return
+    layout_exporter_func()
 
 
 ##-- FUNCIONES DE UPDATE
@@ -488,6 +496,7 @@ class PKLPipelineUI(object):
         cmds.button(label="Export all", command=export_all)
         cmds.button(label="Export Selected Groups", command=export_selected)
         cmds.button(label="Export Camera", command=export_camera)
+        cmds.button(label="Export as layout", command=export_layout,annotation="This will export all characters and props as layout, camera is not included")
         cmds.setParent("..")
         cmds.setParent("..")
 
