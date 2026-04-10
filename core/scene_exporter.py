@@ -124,24 +124,17 @@ def configure_fbx_export(start_frame, end_frame):
     print("  Configuring FBX export settings...")
     
     mel.eval('FBXResetExport;')
-    mel.eval('FBXExportSmoothingGroups -v true;')
+    #mel.eval('FBXExportSmoothingGroups -v true;')
     mel.eval('FBXExportSmoothMesh -v true;')
     mel.eval('FBXExportTangents -v true;')
-    mel.eval('FBXExportReferencedAssetsContent -v true;')
-    mel.eval('FBXExportTriangulate -v false;')
     mel.eval('FBXExportAnimationOnly -v false;')
     mel.eval('FBXExportBakeComplexAnimation -v true;')
     mel.eval('FBXExportBakeComplexStart -v {};'.format(start_frame))
     mel.eval('FBXExportBakeComplexEnd -v {};'.format(end_frame))
-    mel.eval('FBXExportBakeComplexStep -v 1;')
-    mel.eval('FBXExportQuaternion -v "resample";')
-    mel.eval('FBXExportUseSceneName -v false;')
-    mel.eval('FBXExportConstraints -v true;')
-    mel.eval('FBXExportCameras -v true;')
-    mel.eval('FBXExportLights -v true;')
     mel.eval('FBXExportSkins -v true;')
     mel.eval('FBXExportShapes -v true;')
     mel.eval('FBXExportInputConnections -v true;')
+
 
 
 def export_group_to_fbx(group_data, start_frame, end_frame):
