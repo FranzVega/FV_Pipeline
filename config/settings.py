@@ -5,7 +5,7 @@ Configuracion central del pipeline
 """
 
 # Version del pipeline (IMPORTANTE para updates desde GitHub)
-VERSION = "1.6.6"
+VERSION = "1.6.7"
 
 # GitHub Repository
 REPO_OWNER = "FranzVega"
