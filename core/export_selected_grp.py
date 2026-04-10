@@ -136,7 +136,7 @@ def configure_fbx_export(start_frame, end_frame):
     """ Sets FBX Export options """
     print("  Configuring FBX export settings...")
     mel.eval('FBXResetExport;')
-    mel.eval('FBXExportSmoothingGroups -v true;')
+    #mel.eval('FBXExportSmoothingGroups -v true;')
     mel.eval('FBXExportSmoothMesh -v true;')
     mel.eval('FBXExportTangents -v true;')
     mel.eval('FBXExportAnimationOnly -v false;')
